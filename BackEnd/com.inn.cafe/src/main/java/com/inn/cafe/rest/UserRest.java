@@ -2,6 +2,7 @@ package com.inn.cafe.rest;
 
 import com.inn.cafe.dto.LoginRequest;
 import com.inn.cafe.dto.SignUpRequest;
+import com.inn.cafe.dto.VerifySignupOtpRequest;
 import com.inn.cafe.wrapper.UserWrapper;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,12 @@ import java.util.Map;
 public interface UserRest {
     @PostMapping(path = "/signup")
     public ResponseEntity<String> signUp(@Valid @RequestBody SignUpRequest request);
+
+    @PostMapping(path = "/verifySignupOtp")
+    public ResponseEntity<String> verifySignupOtp(@Valid @RequestBody VerifySignupOtpRequest request);
+
+    @PostMapping(path = "/resendSignupOtp")
+    public ResponseEntity<String> resendSignupOtp(@RequestBody Map<String, String> requestMap);
 
     @PostMapping(path = "/login")
     public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request);

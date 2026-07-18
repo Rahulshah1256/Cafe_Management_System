@@ -32,7 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
-        if (httpServletRequest.getServletPath().matches("/user/login|/user/forgotPassword|/user/signup|/v3/api-docs.*|/swagger-ui.*|/swagger-resources.*")) {
+        if (httpServletRequest.getServletPath().matches("/user/login|/user/forgotPassword|/user/signup|/user/verifySignupOtp|/user/resendSignupOtp|/v3/api-docs.*|/swagger-ui.*|/swagger-resources.*")) {
             filterChain.doFilter(httpServletRequest, httpServletResponse);
         } else {
             String authorizationHeader = httpServletRequest.getHeader("Authorization");

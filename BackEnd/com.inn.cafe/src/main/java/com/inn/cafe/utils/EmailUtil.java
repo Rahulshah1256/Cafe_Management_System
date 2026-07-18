@@ -45,4 +45,26 @@ public class EmailUtil {
         emailSender.send(message);
     }
 
+    /**
+     * Sends the 6-digit signup verification OTP as an HTML email. Used by the two-step
+     * signup flow (POST /user/signup -> POST /user/verifySignupOtp) so a real, deliverable
+     * mailbox is proven before an account is created.
+     */
+    public void sendOtpMail(String to, String otp, int validMinutes) throws MessagingException {
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setFrom("projectteamemail99@gmail.com");
+        helper.setTo(to);
+        helper.setSubject("Verify your email - Cafe Management System");
+        String htmlMSG = "<div style=\"font-family:Arial,sans-serif;max-width:480px;margin:auto\">"
+                + "<h2 style=\"color:#e23744\">Verify your email address</h2>"
+                + "<p>Use the One-Time Password (OTP) below to complete your registration on Cafe Management System:</p>"
+                + "<p style=\"font-size:32px;font-weight:bold;letter-spacing:8px;color:#111;background:#f5f5f5;"
+                + "padding:16px 24px;border-radius:8px;display:inline-block\">" + otp + "</p>"
+                + "<p>This OTP is valid for <b>" + validMinutes + " minutes</b>. If you didn't request this, you can safely ignore this email.</p>"
+                + "</div>";
+        message.setContent(htmlMSG, "text/html");
+        emailSender.send(message);
+    }
+
 }

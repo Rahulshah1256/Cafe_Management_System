@@ -2,6 +2,7 @@ package com.inn.cafe.service;
 
 import com.inn.cafe.dto.LoginRequest;
 import com.inn.cafe.dto.SignUpRequest;
+import com.inn.cafe.dto.VerifySignupOtpRequest;
 import com.inn.cafe.wrapper.UserWrapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,10 @@ import java.util.Map;
 
 public interface UserService {
     ResponseEntity<String> signUp(SignUpRequest request);
+
+    ResponseEntity<String> verifySignupOtp(VerifySignupOtpRequest request);
+
+    ResponseEntity<String> resendSignupOtp(Map<String, String> requestMap);
 
     ResponseEntity<String> login(LoginRequest request);
 

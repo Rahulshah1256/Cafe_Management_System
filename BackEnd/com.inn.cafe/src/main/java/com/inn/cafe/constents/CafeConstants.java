@@ -82,4 +82,8 @@ public class CafeConstants {
         return paymentMethod != null && CASH_PAYMENT_METHODS.contains(paymentMethod.trim().toUpperCase());
     }
 
+    // Signup email OTP verification settings.
+    public static final int SIGNUP_OTP_VALID_MINUTES = 10;
+    public static final int SIGNUP_OTP_MAX_ATTEMPTS = 5;
+
 }

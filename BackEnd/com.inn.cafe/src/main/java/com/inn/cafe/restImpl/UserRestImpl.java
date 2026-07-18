@@ -2,6 +2,7 @@ package com.inn.cafe.restImpl;
 
 import com.inn.cafe.dto.LoginRequest;
 import com.inn.cafe.dto.SignUpRequest;
+import com.inn.cafe.dto.VerifySignupOtpRequest;
 import com.inn.cafe.rest.UserRest;
 import com.inn.cafe.service.UserService;
 import com.inn.cafe.wrapper.UserWrapper;
@@ -21,6 +22,16 @@ public class UserRestImpl implements UserRest {
     @Override
     public ResponseEntity<String> signUp(SignUpRequest request) {
         return userService.signUp(request);
+    }
+
+    @Override
+    public ResponseEntity<String> verifySignupOtp(VerifySignupOtpRequest request) {
+        return userService.verifySignupOtp(request);
+    }
+
+    @Override
+    public ResponseEntity<String> resendSignupOtp(Map<String, String> requestMap) {
+        return userService.resendSignupOtp(requestMap);
     }
 
     @Override

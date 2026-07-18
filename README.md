@@ -141,7 +141,7 @@ Cafe_Management_System/
 ### Customer-Facing Features
 
 - **Modern storefront UI** — premium red/orange/green Swiggy/Zomato-inspired design system, framer-motion animations (card lift, image zoom, fade/slide transitions, skeleton loaders), fully responsive (desktop/tablet/mobile), dark mode toggle.
-- **Signup / Login** — JWT-based auth, "Forgot Password" email flow, change password.
+- **Signup / Login** — JWT-based auth with **real email OTP verification on signup** (a 6-digit code is emailed and must be verified before the account is created), "Forgot Password" email flow, change password.
 - **Menu browsing** — real food photography per category (Pizza, Biryani, Beverages, Desserts), search with live suggestions, category filters, price/rating/veg-only filters, best-seller & new-arrival badges, spice level, prep time, calories-style metadata.
 - **Recommendations** — "Recommended for You" section based on past orders.
 - **Cart** — add/update/remove items, live subtotal/tax/delivery-charge/platform-fee breakdown, coupon code application with validation (expiry, usage limit, min order amount, max discount cap), free-delivery threshold.
@@ -184,6 +184,27 @@ Cafe_Management_System/
 - **BCrypt password hashing.**
 - **Externalized secrets** — DB credentials, JWT secret, mail credentials, and Razorpay keys are all environment-variable driven (no secrets hardcoded in source).
 - **Automated Playwright regression suite** covering admin, customer, and delivery-partner flows end-to-end in a real browser.
+
+---
+
+## Email OTP Signup Verification
+
+Signup is a **two-step, email-verified process** — no account is created until the user proves ownership of their email address:
+
+1. **`POST /user/signup`** — the user submits name, email, contact number, and password. The backend does **not** create a `User` row yet. Instead it:
+   - Hashes the password (BCrypt) and stores a *pending registration* in a `signup_otp` table (email, name, contact, hashed password, requested status).
+   - Generates a random 6-digit OTP, hashes it (BCrypt) before storing it (the plaintext OTP is never persisted or logged), and sets a 10-minute expiry.
+   - Emails the plaintext OTP to the user via `EmailUtil.sendOtpMail(...)` (real SMTP send — requires `MAIL_USERNAME`/`MAIL_PASSWORD` to be configured).
+   - Responds with `"OTP sent to your email. Please verify to complete registration."`
+2. **`POST /user/verifySignupOtp`** — the user submits `{ email, otp }`. The backend validates the OTP against the pending registration:
+   - Wrong OTP → attempt counter incremented, up to `SIGNUP_OTP_MAX_ATTEMPTS = 5` tries before the pending registration is discarded.
+   - Expired OTP (> 10 minutes old) → pending registration discarded, user must sign up again.
+   - Correct OTP → the real `User` row is created (role `user`), the pending `signup_otp` row is deleted, and the account can now log in.
+3. **`POST /user/resendSignupOtp`** — submits `{ email }` to regenerate and re-send a fresh OTP for an existing pending registration (e.g. if the original email didn't arrive), resetting the attempt counter.
+
+The Signup dialog on the frontend (`SignupDialog.tsx`) reflects this as a two-step UI: fill the signup form → enter the 6-digit code emailed to you (with a "Resend OTP" option) → account created, ready to log in.
+
+> ⚠️ Because a real OTP email is required to complete signup, `MAIL_USERNAME`/`MAIL_PASSWORD` **must** be configured (a real Gmail address + [App Password](https://myaccount.google.com/apppasswords) works well) — signup will fail with a mail error otherwise.
 
 ---
 
@@ -240,7 +261,7 @@ The backend reads all secrets from environment variables (with safe local-dev fa
 | `DB_USERNAME` | Postgres username | `postgres` |
 | `DB_PASSWORD` | Postgres password | `cafe_pg_pass` |
 | `JWT_SECRET` | Secret key used to sign JWTs | dev-only placeholder (⚠️ **change for production**) |
-| `MAIL_USERNAME` | SMTP username for email notifications/password reset | *(empty — email features are disabled until set)* |
+| `MAIL_USERNAME` | SMTP username — **required for signup to work**, since a real OTP email is sent on registration (also used for password-reset/notifications) | *(empty — signup/email features fail until set)* |
 | `MAIL_PASSWORD` | SMTP password / app password | *(empty)* |
 | `MAIL_HOST` / `MAIL_PORT` | SMTP server | `smtp.gmail.com` / `587` |
 | `RAZORPAY_KEY_ID` | Razorpay API Key ID | randomly-generated placeholder (⚠️ **not a real account — see [Payment Gateway](#payment-gateway-razorpay-setup)**) |
@@ -406,6 +427,7 @@ Remember to set all environment variables (DB, JWT, mail, Razorpay) in your prod
 | Frontend shows CORS errors | Confirm the backend is running on port `8081` and the frontend on `4200` — CORS is pre-configured for this pairing. |
 | Login returns `400 Bad Request` | The login endpoint expects `{ "email": "...", "password": "..." }` (not `username`). |
 | Email notifications / password reset don't send | `MAIL_USERNAME`/`MAIL_PASSWORD` are unset by default — configure a real SMTP account (e.g. a Gmail App Password) to enable email. |
+| Signup fails / never receives OTP email | Signup now **requires** working SMTP — set `MAIL_USERNAME`/`MAIL_PASSWORD` (Gmail App Password recommended). Check spam folder. OTP expires after 10 minutes and allows 5 attempts; use "Resend OTP" if needed. |
 | Online payments fail with "Payment gateway is not available" | Expected with default placeholder keys — see [Payment Gateway Setup](#payment-gateway-razorpay-setup) to use real Razorpay credentials. Cash on Delivery is unaffected. |
 | `mvn`/`java` not recognized, or wrong Java version | Ensure `JAVA_HOME` points at a JDK **21+** installation and its `bin` folder is on your `PATH`. |
 

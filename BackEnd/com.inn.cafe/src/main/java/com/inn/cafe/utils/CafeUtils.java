@@ -43,6 +43,15 @@ public class CafeUtils {
         return sb.toString();
     }
 
+    /**
+     * Generates a random 6-digit numeric OTP (as a zero-padded string) for email
+     * verification during signup.
+     */
+    public static String generateOtp() {
+        int value = RANDOM.nextInt(1_000_000);
+        return String.format("%06d", value);
+    }
+
     public static JSONArray getJsonArrayFromString(String data) throws JSONException {
         JSONArray jsonArray = new JSONArray(data);
         return jsonArray;
