@@ -38,6 +38,9 @@ public class BillServiceImpl implements BillService {
     BillDao billDao;
 
     @Autowired
+    com.inn.cafe.dao.UserDao userDao;
+
+    @Autowired
     AuthenticationManager authenticationManager;
     @Autowired
     com.inn.cafe.JWT.jwtUtil jwtUtil;
@@ -49,6 +52,14 @@ public class BillServiceImpl implements BillService {
 
     @Autowired
     EmailUtil emailUtil;
+
+    @Autowired
+    com.inn.cafe.service.NotificationService notificationService;
+
+    // Externalized so PDF invoices work across environments (defaults to the OS temp dir
+    // instead of a hardcoded Windows drive letter that may not exist).
+    @org.springframework.beans.factory.annotation.Value("${cafe.pdf.store-location:${java.io.tmpdir}/cafe-bills}")
+    private String storeLocation;
 
     @Override
     public ResponseEntity<String> generateReport(Map<String, Object> requestMap) {
@@ -67,7 +78,8 @@ public class BillServiceImpl implements BillService {
                 String data = "Name: " + requestMap.get("name") + "\n" + "Contact Number: " + requestMap.get("contactNumber") +
                         "\n" + "Email: " + requestMap.get("email") + "\n" + "Payment Method: " + requestMap.get("paymentMethod");
                 Document document = new Document();
-                PdfWriter.getInstance(document, new FileOutputStream(CafeConstants.STORE_LOCATION + "\\" + filename + ".pdf"));
+                new File(storeLocation).mkdirs();
+                PdfWriter.getInstance(document, new FileOutputStream(storeLocation + File.separator + filename + ".pdf"));
                 document.open();
                 setRectaangleInPdf(document);
 
@@ -120,6 +132,15 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
+    public ResponseEntity<org.springframework.data.domain.Page<Bill>> getBillsPaged(int page, int size, String sortBy, String direction) {
+        org.springframework.data.domain.Pageable pageable = com.inn.cafe.utils.PageUtils.buildPageable(page, size, sortBy, direction);
+        org.springframework.data.domain.Page<Bill> result = jwtFilter.isAdmin()
+                ? billDao.getAllBillsPaged(pageable)
+                : billDao.getBillByUserNamePaged(jwtFilter.getCurrentUsername(), pageable);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @Override
     public ResponseEntity<byte[]> getPdf(Map<String, Object> requestMap) {
         log.info("Inside getPdf : requestMap {}", requestMap);
         try {
@@ -127,7 +148,7 @@ public class BillServiceImpl implements BillService {
             if (!requestMap.containsKey("uuid") && validateResquestMap(requestMap)) {
                 return new ResponseEntity<>(byteArray, HttpStatus.BAD_REQUEST);
             }
-            String filepath = CafeConstants.STORE_LOCATION + "\\" + (String) requestMap.get("uuid") + ".pdf";
+            String filepath = storeLocation + File.separator + (String) requestMap.get("uuid") + ".pdf";
 
             if (CafeUtils.isFileExist(filepath)) {
                 byteArray = getByteArray(filepath);
@@ -147,23 +168,76 @@ public class BillServiceImpl implements BillService {
 
     @Override
     public ResponseEntity<String> delete(Integer id) {
-        try {
-            if (jwtFilter.isAdmin()) {
-                Optional optional = billDao.findById(id);
-                if (!optional.isEmpty()) {
-                    billDao.deleteById(id);
-                    //System.out.println("Product is deleted successfully");
-                    return CafeUtils.getResponeEntity("Bill is deleted successfully", HttpStatus.OK);
-                }
-                //System.out.println("Product id doesn't exist");
-                return CafeUtils.getResponeEntity("Bill id doesn't exist", HttpStatus.OK);
-            } else {
-                return CafeUtils.getResponeEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        if (!jwtFilter.isAdmin()) {
+            throw new com.inn.cafe.exception.UnauthorizedException(CafeConstants.UNAUTHORIZED_ACCESS);
         }
-        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        Optional optional = billDao.findById(id);
+        if (optional.isEmpty()) {
+            return CafeUtils.getResponeEntity("Bill id doesn't exist", HttpStatus.OK);
+        }
+        billDao.deleteById(id);
+        return CafeUtils.getResponeEntity("Bill is deleted successfully", HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<Bill> updateOrderStatus(Integer id, com.inn.cafe.dto.OrderStatusUpdateRequest request) {
+        if (!jwtFilter.isAdmin()) {
+            throw new com.inn.cafe.exception.UnauthorizedException(CafeConstants.UNAUTHORIZED_ACCESS);
+        }
+        Bill bill = billDao.findById(id)
+                .orElseThrow(() -> new com.inn.cafe.exception.ResourceNotFoundException("Bill not found with id: " + id));
+        String status = request.getStatus() == null ? null : request.getStatus().trim().toUpperCase();
+        if (!CafeConstants.VALID_ORDER_STATUSES.contains(status)) {
+            throw new com.inn.cafe.exception.ValidationException("Invalid order status: " + request.getStatus());
+        }
+        bill.setOrderStatus(status);
+        billDao.save(bill);
+        log.info("Order status for bill {} updated to {}", bill.getUuid(), status);
+        notificationService.notify(bill.getCreatedBy(), "Order Status Updated",
+                "Your order " + bill.getUuid() + " is now " + status.replace('_', ' ') + ".",
+                "ORDER_STATUS", bill.getId());
+        return new ResponseEntity<>(bill, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<Bill> cancelOrder(Integer id) {
+        Bill bill = billDao.findById(id)
+                .orElseThrow(() -> new com.inn.cafe.exception.ResourceNotFoundException("Bill not found with id: " + id));
+        boolean owner = jwtFilter.isAdmin() || bill.getCreatedBy().equalsIgnoreCase(jwtFilter.getCurrentUsername());
+        if (!owner) {
+            throw new com.inn.cafe.exception.UnauthorizedException(CafeConstants.UNAUTHORIZED_ACCESS);
+        }
+        if (!CafeConstants.CUSTOMER_CANCELLABLE_STATUSES.contains(bill.getOrderStatus())) {
+            throw new com.inn.cafe.exception.ValidationException(
+                    "Order can no longer be cancelled (current status: " + bill.getOrderStatus() + ")");
+        }
+        bill.setOrderStatus(CafeConstants.ORDER_STATUS_CANCELLED);
+        billDao.save(bill);
+        reverseLoyaltyPoints(bill);
+        log.info("Order {} cancelled by {}", bill.getUuid(), jwtFilter.getCurrentUsername());
+        notificationService.notify(bill.getCreatedBy(), "Order Cancelled",
+                "Your order " + bill.getUuid() + " has been cancelled.", "ORDER_STATUS", bill.getId());
+        return new ResponseEntity<>(bill, HttpStatus.OK);
+    }
+
+    // Undoes any loyalty points earned/redeemed by this order so a cancellation doesn't leave
+    // the customer's balance permanently skewed. No-op for legacy bills predating this column.
+    private void reverseLoyaltyPoints(Bill bill) {
+        int earned = bill.getLoyaltyPointsEarned() == null ? 0 : bill.getLoyaltyPointsEarned();
+        int redeemed = bill.getLoyaltyPointsRedeemed() == null ? 0 : bill.getLoyaltyPointsRedeemed();
+        if (earned == 0 && redeemed == 0) {
+            return;
+        }
+        com.inn.cafe.POJO.User user = userDao.findByEmail(bill.getCreatedBy());
+        if (user == null) {
+            return;
+        }
+        int currentBalance = user.getLoyaltyPoints() == null ? 0 : user.getLoyaltyPoints();
+        user.setLoyaltyPoints(currentBalance - earned + redeemed);
+        userDao.save(user);
+        bill.setLoyaltyPointsEarned(0);
+        bill.setLoyaltyPointsRedeemed(0);
+        billDao.save(bill);
     }
 
     private void insertBill(Map<String, Object> requestMap) {

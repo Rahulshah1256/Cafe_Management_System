@@ -4,7 +4,7 @@ import lombok.Data;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 
 @NamedQuery(name = "User.findByEmailId", query = "select u from User u where u.email=:email")
@@ -45,6 +45,20 @@ public class User implements Serializable {
 
     @Column(name = "role")
     private String role;
+
+    // Loyalty program balance; earned on checkout (fraction of order total), redeemable as a
+    // flat discount at checkout time (1 point = CafeConstants.LOYALTY_POINT_VALUE currency units).
+    @Column(name = "loyalty_points")
+    private Integer loyaltyPoints = 0;
+
+    // Delivery module: only meaningful for role="delivery" accounts (created by an admin via
+    // DeliveryService.registerPartner) - the rider's vehicle registration number, and their
+    // current self-reported availability (AVAILABLE/BUSY/OFFLINE, see CafeConstants).
+    @Column(name = "vehicle_number")
+    private String vehicleNumber;
+
+    @Column(name = "delivery_availability")
+    private String deliveryAvailability;
 
     public User() {
 
@@ -113,6 +127,31 @@ public class User implements Serializable {
     public void setRole(String role) {
         this.role = role;
     }
+
+    public Integer getLoyaltyPoints() {
+        return loyaltyPoints;
+    }
+
+    public void setLoyaltyPoints(Integer loyaltyPoints) {
+        this.loyaltyPoints = loyaltyPoints;
+    }
+
+    public String getVehicleNumber() {
+        return vehicleNumber;
+    }
+
+    public void setVehicleNumber(String vehicleNumber) {
+        this.vehicleNumber = vehicleNumber;
+    }
+
+    public String getDeliveryAvailability() {
+        return deliveryAvailability;
+    }
+
+    public void setDeliveryAvailability(String deliveryAvailability) {
+        this.deliveryAvailability = deliveryAvailability;
+    }
+
     @Override
     public String toString() {
         return "User{" +

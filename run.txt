@@ -1,9 +1,20 @@
-frontend in terminal 
+HOW TO RUN
+==========
 
-$env:NODE_OPTIONS = "--openssl-legacy-provider"
-ng s 
-localhost:4200
+Frontend (React - new, in Frontend-React/)
+  1. cd Frontend-React
+  2. npm install        (first time only)
+  3. npm run dev
+  4. Open http://localhost:4200
 
-backend 
- 
-localhost:8081
+Backend (Spring Boot, in BackEnd/com.inn.cafe/)
+  Needs a MySQL server with a database named "cafesystem".
+  Update datasource username/password in
+    BackEnd/com.inn.cafe/src/main/resources/application.properties
+  to match your MySQL, then:
+  1. cd BackEnd/com.inn.cafe
+  2. set JAVA_HOME to a JDK 17+ (project targets 17)
+  3. mvn spring-boot:run
+  4. API runs on http://localhost:8081
+
+Note: The old Angular frontend still lives in Frontend/ (kept for reference).

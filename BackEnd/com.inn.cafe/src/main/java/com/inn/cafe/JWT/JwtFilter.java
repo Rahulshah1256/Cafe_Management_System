@@ -12,10 +12,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Configuration
@@ -32,7 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
-        if (httpServletRequest.getServletPath().matches("/user/login|/user/forgetpassword|/user/signup")) {
+        if (httpServletRequest.getServletPath().matches("/user/login|/user/forgotPassword|/user/signup|/v3/api-docs.*|/swagger-ui.*|/swagger-resources.*")) {
             filterChain.doFilter(httpServletRequest, httpServletResponse);
         } else {
             String authorizationHeader = httpServletRequest.getHeader("Authorization");
@@ -62,6 +62,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
     public boolean isUser() {
         return "user".equalsIgnoreCase((String) claims.get("role"));
+    }
+
+    public boolean isDeliveryPartner() {
+        return com.inn.cafe.constents.CafeConstants.ROLE_DELIVERY_PARTNER.equalsIgnoreCase((String) claims.get("role"));
     }
 
     public String getCurrentUsername() {

@@ -19,7 +19,7 @@ public class CafeUtils {
 
     }
     public static ResponseEntity<String> getResponeEntity(String responseMessage , HttpStatus httpStatus){
-        return new ResponseEntity<String>("{\"messag\":\""+responseMessage+"\"}", httpStatus);
+        return new ResponseEntity<String>("{\"message\":\""+responseMessage+"\"}", httpStatus);
     }
 
     public static String getUUID(){
@@ -27,6 +27,22 @@ public class CafeUtils {
         long time =  data.getTime();
         return "BILL" + time;
     }
+
+    private static final String TEMP_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
+
+    /**
+     * Generates a random 10-character temporary password for the forgot-password flow
+     * (used since passwords are hashed and cannot be recovered/emailed as-is).
+     */
+    public static String generateTemporaryPassword() {
+        StringBuilder sb = new StringBuilder(10);
+        for (int i = 0; i < 10; i++) {
+            sb.append(TEMP_PASSWORD_CHARS.charAt(RANDOM.nextInt(TEMP_PASSWORD_CHARS.length())));
+        }
+        return sb.toString();
+    }
+
     public static JSONArray getJsonArrayFromString(String data) throws JSONException {
         JSONArray jsonArray = new JSONArray(data);
         return jsonArray;

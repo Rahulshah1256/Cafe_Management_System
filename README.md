@@ -29,15 +29,16 @@ The purpose of this project is to facilitate the management of the cafeteria and
 
 ### Built With
 
-* Java [Spring Boot - Rest Api] , Angular , MYSQL Database
+* Java [Spring Boot - Rest Api] , React , MYSQL Database
 
 
 <!-- GETTING STARTED -->
 ## How To Run 
 
-<h4>Angular Part</h4>
-in terminal using vs code you will need this commands<br>
-- $env:NODE_OPTIONS = "--openssl-legacy-provider"
-<br>- ng s
-<br>- Then use this url in your broswer -> localhost:4200
+<h4>React Part (Frontend-React/)</h4>
+in a terminal:<br>
+- cd Frontend-React
+<br>- npm install
+<br>- npm run dev
+<br>- Then open this url in your browser -> localhost:4200
 

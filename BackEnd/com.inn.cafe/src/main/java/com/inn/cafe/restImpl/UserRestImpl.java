@@ -1,16 +1,14 @@
 package com.inn.cafe.restImpl;
 
-import com.inn.cafe.constents.CafeConstants;
+import com.inn.cafe.dto.LoginRequest;
+import com.inn.cafe.dto.SignUpRequest;
 import com.inn.cafe.rest.UserRest;
 import com.inn.cafe.service.UserService;
-import com.inn.cafe.utils.CafeUtils;
 import com.inn.cafe.wrapper.UserWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -21,78 +19,43 @@ public class UserRestImpl implements UserRest {
     UserService userService;
 
     @Override
-    public ResponseEntity<String> signUp(Map<String, String> requestMap) {
-
-        try {
-            //System.out.println("inside userRestImpl");
-            return userService.signUp(requestMap);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        //System.out.println("Before return");
-        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<String> signUp(SignUpRequest request) {
+        return userService.signUp(request);
     }
 
     @Override
-    public ResponseEntity<String> login(Map<String, String> requestMap) {
-        try {
-            return userService.login(requestMap);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<String> login(LoginRequest request) {
+        return userService.login(request);
     }
 
     @Override
     public ResponseEntity<List<UserWrapper>> getAllUser() {
-        try {
-            return userService.getAllUser();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return new ResponseEntity<List<UserWrapper>>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return userService.getAllUser();
     }
 
-
+    @Override
+    public ResponseEntity<org.springframework.data.domain.Page<UserWrapper>> getAllUserPaged(int page, int size, String sortBy, String direction) {
+        return userService.getAllUserPaged(page, size, sortBy, direction);
+    }
 
     @Override
     public ResponseEntity<String> update(Map<String, String> requestMap) {
-
-        try {
-            return userService.update(requestMap);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return userService.update(requestMap);
     }
 
     @Override
     public ResponseEntity<String> checkToken() {
-        try {
-            return userService.checkToken();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return userService.checkToken();
     }
 
     @Override
     public ResponseEntity<String> changePassword(Map<String, String> requestMap) {
-        try {
-            return userService.changePassword(requestMap);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return userService.changePassword(requestMap);
     }
 
     @Override
     public ResponseEntity<String> forgetPassword(Map<String, String> requestMap) {
-        try {
-            return userService.forgetPassword(requestMap);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        return userService.forgetPassword(requestMap);
     }
 }
+

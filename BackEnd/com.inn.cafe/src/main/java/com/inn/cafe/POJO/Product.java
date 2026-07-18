@@ -4,16 +4,16 @@ import lombok.Data;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 
-@NamedQuery(name = "Product.getAllProduct", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id , u.name , u.description , u.price , u.category.id , u.category.name , u.status) from Product u")
+@NamedQuery(name = "Product.getAllProduct", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id, u.name, u.description, u.price, u.category.id, u.category.name, u.status, u.isVeg, u.spicyLevel, u.bestSeller, u.newArrival, u.rating, u.ratingCount, u.imageUrl, u.prepTimeMinutes) from Product u")
 
 @NamedQuery(name = "Product.updateProductStatus" , query = "update Product u set u.status =:status where u.id =:id")
 
-@NamedQuery(name = "Product.getByCategory", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id , u.name , u.description , u.price , u.category.id , u.category.name , u.status  ) from Product u where u.category.id=:id and u.status='true'")
+@NamedQuery(name = "Product.getByCategory", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id, u.name, u.description, u.price, u.category.id, u.category.name, u.status, u.isVeg, u.spicyLevel, u.bestSeller, u.newArrival, u.rating, u.ratingCount, u.imageUrl, u.prepTimeMinutes) from Product u where u.category.id=:id and u.status='true'")
 
-@NamedQuery(name = "Product.getProductById", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id , u.name , u.description , u.price) from Product u where u.id=:id")
+@NamedQuery(name = "Product.getProductById", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id, u.name, u.description, u.price, u.category.id, u.category.name, u.status, u.isVeg, u.spicyLevel, u.bestSeller, u.newArrival, u.rating, u.ratingCount, u.imageUrl, u.prepTimeMinutes) from Product u where u.id=:id")
 
 @Data
 @Entity
@@ -44,6 +44,30 @@ public class Product implements Serializable {
 
     @Column(name = "status")
     private String status;
+
+    @Column(name = "is_veg")
+    private Boolean isVeg = Boolean.TRUE;
+
+    @Column(name = "spicy_level")
+    private String spicyLevel = "NONE";
+
+    @Column(name = "best_seller")
+    private Boolean bestSeller = Boolean.FALSE;
+
+    @Column(name = "new_arrival")
+    private Boolean newArrival = Boolean.FALSE;
+
+    @Column(name = "rating")
+    private Double rating = 0.0;
+
+    @Column(name = "rating_count")
+    private Integer ratingCount = 0;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "prep_time_minutes")
+    private Integer prepTimeMinutes;
 
 
     public Product() {
